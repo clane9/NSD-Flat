@@ -1,0 +1,28 @@
+Terms and Conditions
+
+Before you download the NSD data, please read the data sharing and usage agreement below. You must agree to all terms and conditions before accessing the data.
+
+Data Sharing and Usage Agreement
+
+Before I download or process the NSD dataset, I agree to the following terms and conditions:
+
+1. The Center for Magnetic Resonance Research (CMRR) grants me non-exclusive, royalty-free access to download and process this dataset.
+2. I will utilize this dataset only for research and educational purposes.
+3. I will not distribute this dataset or its components to any other individual or entity.
+4. I will require anyone on my team who utilizes these data to comply with this data use agreement.
+5. I will neither sell this dataset or its components nor monetize it.
+6. I will comply with any rules and regulations imposed by my institution and its institutional review board in requesting these data.
+7. The NSD dataset is collected from human subjects and has been de-identified. I will not retrieve or try to retrieve protected health information (PHI) of the human subjects in this dataset. If I incidentally discover PHI information, I will immediately inform the principal investigator.
+8. I agree that all presentations and publications resulting from any use of this dataset must cite the relevant work using the suggested citation format listed below.
+9. CMRR specifically disclaims any warranties including, but not limited to, the implied warranties of merchantability and fitness for a particular purpose. The dataset and the encompassing software provided hereunder is on an “as is” basis, and CMRR has no obligation to provide maintenance, support, updates, enhancements, or modifications.
+10. In no event shall CMRR be liable to any party for direct, indirect, special, incidental, or consequential damages arising out of the use of this dataset and the accompanying software, even if CMRR has been advised of the possibility of such damage.
+11. In addition to the above-listed terms and conditions, I will also comply with federal, state, local, and institutional policies and regulations.
+Citation Format
+
+If you make use of the NSD dataset, please cite the NSD data paper:
+
+Allen, St-Yves, Wu, Breedlove, Prince, Dowdle, Nau, Caron, Pestilli, Charest, Hutchinson, Naselaris*, & Kay*. A massive 7T fMRI dataset to bridge cognitive neuroscience and artificial intelligence. Nature Neuroscience (2021).
+
+In addition, please acknowledge the NSD funding sources using wording similar to:
+
+"Collection of the NSD dataset was supported by NSF IIS-1822683 and NSF IIS-1822929."
