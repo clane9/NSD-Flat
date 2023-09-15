@@ -1,12 +1,13 @@
 # NSD-Flat
+[[`GitHub`]](https://github.com/clane9/NSD-Flat) [[🤗 `Hugging Face Hub`]](https://huggingface.co/datasets/clane9/NSD-Flat)
 
 ![Examples](.github/images/examples.png)
 
-A [Huggingface dataset](https://huggingface.co/datasets/clane9/NSD-Flat) of pre-processed brain activity flat maps from the [Natural Scenes Dataset](https://naturalscenesdataset.org/), constrained to a visual cortex region of interest and rendered as PNG images.
+A Hugging Face dataset of pre-processed brain activity flat maps from the [Natural Scenes Dataset](https://naturalscenesdataset.org/), constrained to a visual cortex region of interest and rendered as PNG images.
 
 ## Load the dataset
 
-Load the dataset from [Huggingface Hub](https://huggingface.co/datasets/clane9/NSD-Flat)
+Load the dataset from [Hugging Face Hub](https://huggingface.co/datasets/clane9/NSD-Flat)
 
 ```python
 from datasets import load_dataset
