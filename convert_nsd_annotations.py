@@ -23,17 +23,17 @@ Bbox = Tuple[float, float, float, float]
 
 NSD_DIR = "data/NSD"
 COCO_ANNO_DIR = "data/COCO/annotations"
+NUM_SUBS = 8
 
 
 def load_nsd_annotations(
-    stim_info_path: StrOrPath, coco_annotations_dir: StrOrPath
+    stim_info: pd.DataFrame, coco_annotations_dir: StrOrPath
 ) -> List[Dict[str, Any]]:
     """
     Load and convert NSD image annotations from their COCO sources.
     """
     # All images in NSD are scaled to 425 x 425
     scaled_height, scaled_width = 425, 425
-    stim_info = pd.read_csv(stim_info_path, index_col=0)
 
     cocos: Dict[Tuple[str, str], COCO] = {}
     for typ in ["instances", "captions"]:
@@ -274,10 +274,36 @@ def _filter_and_reshape_instances(
     return objects
 
 
+def get_long_stim_info(stim_info: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get long NSD stimulus info indexed by subject_id and trial_id
+    """
+    long_stim_info = []
+
+    for ii in tqdm(range(len(stim_info))):
+        row = stim_info.iloc[ii].to_dict()
+        for subid in range(NUM_SUBS):
+            for repid in range(3):
+                trialid = row[f"subject{subid + 1}_rep{repid}"]
+                if trialid > 0:
+                    long_row = {"subject_id": subid, "trial_id": trialid - 1, **row}
+                    long_stim_info.append(long_row)
+
+    long_stim_info = pd.DataFrame.from_records(
+        long_stim_info, index=["subject_id", "trial_id"]
+    )
+    long_stim_info = long_stim_info.sort_index()
+    return long_stim_info
+
+
 if __name__ == "__main__":
     stim_info_path = Path(NSD_DIR) / "nsddata/experiments/nsd/nsd_stim_info_merged.csv"
-    annotations = load_nsd_annotations(stim_info_path, COCO_ANNO_DIR)
+    stim_info = pd.read_csv(stim_info_path, index_col=0)
+    annotations = load_nsd_annotations(stim_info, COCO_ANNO_DIR)
 
     with open("data/nsd_annotations.jsonl", "w") as f:
         for annot in annotations:
             print(json.dumps(annot), file=f)
+
+    long_stim_info = get_long_stim_info(stim_info)
+    long_stim_info.to_csv("data/nsd_stim_info_long.csv")

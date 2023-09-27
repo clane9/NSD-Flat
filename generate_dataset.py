@@ -32,19 +32,19 @@ NUM_TRIALS = 30000
 IMG_SIZE = 425
 
 # Available sessions per subject.
-# Excluding the 3 unreleased sessions which make up the held out test set.
-TOTAL_SESSIONS = 40
-NUM_TRAIN_SESSIONS = {
-    "subj01": 37,
-    "subj02": 37,
-    "subj03": 29,
-    "subj04": 27,
-    "subj05": 37,
-    "subj06": 29,
-    "subj07": 37,
-    "subj08": 27,
+# Last three sessions are test set.
+MAX_SESSIONS = 40
+NUM_SESSIONS = {
+    "subj01": 40,
+    "subj02": 40,
+    "subj03": 32,
+    "subj04": 30,
+    "subj05": 40,
+    "subj06": 32,
+    "subj07": 40,
+    "subj08": 30,
 }
-TRIALS_PER_SESSION = NUM_TRIALS // TOTAL_SESSIONS
+TRIALS_PER_SESSION = NUM_TRIALS // MAX_SESSIONS
 
 # Pixel resolution in mm for rasterized activity maps
 PIXEL_SIZE = 1.0
@@ -54,21 +54,19 @@ MAP_RECT = (-100, 100, -120, 95)
 VMAX = 2.5
 
 
-def generate_dataset(img_size: Optional[int] = None, debug: bool = False):
-    logging.info("Loading NSD stimuli")
+def generate_dataset(split: str = "train", img_size: Optional[int] = None, debug: bool = False):
+    logging.info("Loading NSD image stimuli")
     images = h5py.File(ROOT / "data/NSD/nsddata_stimuli/stimuli/nsd/nsd_stimuli.hdf5")
     images = images["imgBrick"]
     logging.info("Images shape: %s", images.shape)
 
-    stim_info_path = ROOT / "data/NSD/nsddata/experiments/nsd/nsd_stim_info_merged.csv"
-    stim_info = pd.read_csv(stim_info_path, index_col=0)
+    logging.info("Loading NSD stimulus info")
+    long_stim_info_path = ROOT / "data/nsd_stim_info_long.csv"
+    long_stim_info = pd.read_csv(long_stim_info_path, index_col=[0, 1])
 
     logging.info("Loading annotations")
     annotations = pd.read_json(ROOT / "data/nsd_annotations.jsonl", lines=True)
     annotations = annotations.set_index("nsd_id")
-
-    logging.info("Mapping trials to NSD stimuli IDs")
-    trial_to_nsd_id_maps = get_trial_to_nsd_id_maps(stim_info)
 
     for subid, sub in enumerate(SUBS):
         logging.info("Generating data for subject %s", sub)
@@ -84,13 +82,21 @@ def generate_dataset(img_size: Optional[int] = None, debug: bool = False):
         resampler = get_resampler(combined_mask, pixel_size=PIXEL_SIZE, rect=MAP_RECT)
         logging.info("%s: size of raster mask: %d", sub, resampler.mask_.sum())
 
-        num_sessions = 1 if debug else NUM_TRAIN_SESSIONS[sub]
-        for sesid in range(num_sessions):
+        if split == "train":
+            sessions = range(NUM_SESSIONS[sub] - 3)
+        elif split == "test":
+            sessions = range(NUM_SESSIONS[sub] - 3, NUM_SESSIONS[sub])
+        else:
+            raise ValueError(f"Unrecognized split {split}")
+        logging.info("%s: %s sessions:\n\t%s", sub, split, list(sessions))
+
+        for sesid in sessions:
             activity = load_session_activity(sub, sesid, masks)
 
             for ii, act in enumerate(activity):
                 trialid = sesid * TRIALS_PER_SESSION + ii
-                nsdid = int(trial_to_nsd_id_maps[subid][trialid])
+                trial_info = long_stim_info.loc[(subid, trialid)].to_dict()
+                nsdid = trial_info["nsdId"]
 
                 # Stimulus image, resized
                 img = images[nsdid]
@@ -112,17 +118,26 @@ def generate_dataset(img_size: Optional[int] = None, debug: bool = False):
                 anns = annotations.loc[nsdid].to_dict()
 
                 record = {
-                    "subject": sub,
                     "subject_id": subid,
+                    "trial_id": trialid,
+                    "session_id": sesid,
                     "nsd_id": nsdid,
                     "image": img,
                     "activity": act,
+                    "subject": sub,
+                    **{k: trial_info[k] for k in ["flagged", "BOLD5000", "shared1000"]},
                     **{
                         k: anns[k]
                         for k in ["coco_split", "coco_id", "objects", "captions"]
                     },
+                    "repetitions" : {
+                        k: v for k, v in trial_info.items() if "_rep" in k
+                    }
                 }
                 yield record
+            
+            if debug:
+                return
 
 
 def get_resampler(
@@ -137,22 +152,6 @@ def get_resampler(
     resampler.fit(patch.points)
     return resampler
 
-
-def get_trial_to_nsd_id_maps(stim_info: pd.DataFrame) -> List[np.ndarray]:
-    """
-    Get the mappings of trials to NSD stimulus IDs for each subject.
-    """
-    trial_to_nsd_id_maps = [
-        np.zeros((NUM_TRIALS,), dtype=np.int32) for _ in range(NUM_SUBS)
-    ]
-
-    for _, row in stim_info.iterrows():
-        for subid in range(NUM_SUBS):
-            for repid in range(3):
-                trialid = row[f"subject{subid + 1}_rep{repid}"]
-                if trialid > 0:
-                    trial_to_nsd_id_maps[subid][trialid - 1] = row["nsdId"]
-    return trial_to_nsd_id_maps
 
 
 def load_session_activity(
@@ -214,6 +213,14 @@ def get_transforms(img_size: int):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--split",
+        metavar="SPLIT",
+        type=str,
+        default="train",
+        choices=["train", "test"],
+        help="dataset split to generate",
+    )
+    parser.add_argument(
         "--img_size",
         "--sz",
         metavar="H",
@@ -239,7 +246,7 @@ if __name__ == "__main__":
 
     dset = dsets.Dataset.from_generator(
         generate_dataset,
-        gen_kwargs={"img_size": args.img_size, "debug": args.debug},
+        gen_kwargs={"split": args.split, "img_size": args.img_size, "debug": args.debug},
     )
 
     logging.info("Converting images and activity to Image features")
@@ -249,7 +256,7 @@ if __name__ == "__main__":
     logging.info("Saving dataset")
     img_size = args.img_size if args.img_size else IMG_SIZE
     suffix = "-debug" if args.debug else ""
-    out_dir = ROOT / f"processed/size-{img_size}{suffix}"
+    out_dir = ROOT / f"processed/size-{img_size}{suffix}/{args.split}"
     if out_dir.exists():
         shutil.rmtree(out_dir)
     dset.save_to_disk(out_dir, num_proc=args.workers)

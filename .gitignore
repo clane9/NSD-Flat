@@ -22,10 +22,9 @@ _version.py
 
 # Local data and scratch
 .scratch
-nsd_flat/data
-nsd_flat/processed
-checkpoints
-results
+source_data
+data
+processed
 
 # Jupyter
 .ipynb_checkpoints

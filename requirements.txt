@@ -1,6 +1,5 @@
 datasets==2.12.0
 h5py==3.9.0
-hf-argparser @ git+https://github.com/clane9/hf-argparser@v4.29.0
 numpy==1.24.2
 Pillow==9.4.0
 pre-commit==3.3.3
